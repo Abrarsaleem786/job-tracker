@@ -6,6 +6,12 @@
 .pnp.js
 .yarn/install-state.gz
 
+# agent skill scaffolds (local only)
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
+
 # testing
 /coverage
 
@@ -26,7 +32,12 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
+
+# local databases
+*.db
+*.db-journal
 
 # vercel
 .vercel
@@ -34,3 +45,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
