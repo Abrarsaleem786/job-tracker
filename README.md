@@ -8,7 +8,7 @@ laptop (as long as the app is running or deployed against that same database).
 
 ## Live app
 
-- **Production:** https://job-tracker-gamma-woad.vercel.app  
+- **Production:** https://isb-job-tracker.vercel.app  
 - **Source code:** https://github.com/Abrarsaleem786/job-tracker  
 
 After GitHub is connected to Vercel, every push to `master` redeploys automatically.
