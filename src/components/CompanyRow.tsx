@@ -8,6 +8,8 @@ import { StatusBadge } from "./StatusBadge";
 
 type Props = {
   company: Company;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
   onStatusChange: (id: string, status: string) => void;
   onDelete: (id: string) => void;
 };
@@ -19,9 +21,28 @@ function formatDate(value: string | Date | null | undefined) {
   return d.toLocaleDateString();
 }
 
-export function CompanyRow({ company, onStatusChange, onDelete }: Props) {
+export function CompanyRow({
+  company,
+  selected,
+  onToggleSelect,
+  onStatusChange,
+  onDelete,
+}: Props) {
   return (
-    <tr className="border-b border-slate-100 hover:bg-slate-50/80">
+    <tr
+      className={`border-b border-slate-100 hover:bg-slate-50/80 ${
+        selected ? "bg-blue-50/70 hover:bg-blue-50" : ""
+      }`}
+    >
+      <td className="w-10 px-3 py-3">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onToggleSelect(company.id)}
+          aria-label={`Select ${company.name}`}
+          className="h-4 w-4 rounded border-slate-300 text-blue-600 accent-blue-600"
+        />
+      </td>
       <td className="px-4 py-3">
         <Link
           href={`/companies/${company.id}`}

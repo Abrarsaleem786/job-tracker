@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
+  companyBulkDeleteSchema,
   companyCreateSchema,
   normalizeCompanyPayload,
 } from "@/lib/validations";
@@ -111,4 +112,34 @@ export async function POST(req: NextRequest) {
     data: { ...data, userId },
   });
   return NextResponse.json(company, { status: 201 });
+}
+
+export async function DELETE(req: NextRequest) {
+  const userId = await requireUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = companyBulkDeleteSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const ids = Array.from(new Set(parsed.data.ids));
+
+  const result = await prisma.company.deleteMany({
+    where: { userId, id: { in: ids } },
+  });
+
+  return NextResponse.json({ ok: true, deleted: result.count });
 }

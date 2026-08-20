@@ -81,6 +81,7 @@ export function DashboardClient({
   const [modalOpen, setModalOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const categories = useMemo(
     () =>
@@ -174,6 +175,29 @@ export function DashboardClient({
     });
     const res = await fetch(`/api/companies/${id}`, { method: "DELETE" });
     if (!res.ok) await refresh();
+  }
+
+  async function handleBulkDelete(ids: string[]) {
+    if (ids.length === 0) return;
+    setBulkDeleting(true);
+    const idSet = new Set(ids);
+    setCompanies((prev) => {
+      const next = prev.filter((c) => !idSet.has(c.id));
+      setStats(computeStats(next));
+      return next;
+    });
+    try {
+      const res = await fetch("/api/companies", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) await refresh();
+    } catch {
+      await refresh();
+    } finally {
+      setBulkDeleting(false);
+    }
   }
 
   async function handleImportStarter() {
@@ -303,6 +327,8 @@ export function DashboardClient({
               onSort={handleSort}
               onStatusChange={handleStatusChange}
               onDelete={handleDelete}
+              onBulkDelete={handleBulkDelete}
+              bulkDeleting={bulkDeleting}
             />
           </>
         )}

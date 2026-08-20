@@ -30,6 +30,13 @@ export const companyUpdateSchema = companyCreateSchema.partial().extend({
   location: z.string().min(1).max(200).optional(),
 });
 
+export const companyBulkDeleteSchema = z.object({
+  ids: z
+    .array(z.string().min(1).max(40))
+    .min(1, "Select at least one company")
+    .max(200, "Too many companies in one request"),
+});
+
 export type CompanyCreateInput = z.infer<typeof companyCreateSchema>;
 export type CompanyUpdateInput = z.infer<typeof companyUpdateSchema>;
 
