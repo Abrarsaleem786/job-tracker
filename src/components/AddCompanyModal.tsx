@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { STATUSES, STATUS_LABELS, type Status } from "@/types";
+import { Spinner } from "./Spinner";
+import { useToast } from "./ToastProvider";
 
 type Props = {
   open: boolean;
@@ -29,6 +31,7 @@ export function AddCompanyModal({
   onCreated,
   defaultCategories,
 }: Props) {
+  const toast = useToast();
   const [form, setForm] = useState(empty);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,11 +59,15 @@ export function AddCompanyModal({
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed to create company");
       }
+      toast.success(`${form.name} added`);
       setForm(empty);
       onCreated();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -191,8 +198,9 @@ export function AddCompanyModal({
             <button
               type="submit"
               disabled={loading}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
             >
+              {loading && <Spinner />}
               {loading ? "Saving…" : "Add company"}
             </button>
           </div>

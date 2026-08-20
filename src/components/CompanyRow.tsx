@@ -5,6 +5,7 @@ import { ExternalLink, Trash2 } from "lucide-react";
 import type { Company } from "@/types";
 import { STATUSES, STATUS_LABELS, type Status } from "@/types";
 import { StatusBadge } from "./StatusBadge";
+import { useConfirm } from "./ConfirmDialog";
 
 type Props = {
   company: Company;
@@ -28,6 +29,18 @@ export function CompanyRow({
   onStatusChange,
   onDelete,
 }: Props) {
+  const confirm = useConfirm();
+
+  async function handleDelete() {
+    const ok = await confirm({
+      title: "Delete company",
+      description: `Delete ${company.name}? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (ok) onDelete(company.id);
+  }
+
   return (
     <tr
       className={`border-b border-slate-100 hover:bg-slate-50/80 ${
@@ -95,9 +108,7 @@ export function CompanyRow({
           )}
           <button
             type="button"
-            onClick={() => {
-              if (confirm(`Delete ${company.name}?`)) onDelete(company.id);
-            }}
+            onClick={handleDelete}
             className="rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
             title="Delete"
           >

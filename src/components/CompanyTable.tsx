@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Trash2 } from "lucide-react";
 import type { Company } from "@/types";
 import { CompanyRow } from "./CompanyRow";
+import { useConfirm } from "./ConfirmDialog";
+import { Spinner } from "./Spinner";
 
 type SortKey = "name" | "category" | "location" | "status" | "dateApplied";
 
@@ -43,6 +45,7 @@ export function CompanyTable({
   onBulkDelete,
   bulkDeleting = false,
 }: Props) {
+  const confirm = useConfirm();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const selectAllRef = useRef<HTMLInputElement>(null);
 
@@ -89,11 +92,16 @@ export function CompanyTable({
 
   async function handleBulkDelete() {
     if (selectedCount === 0 || bulkDeleting) return;
-    const label =
-      selectedCount === 1
-        ? "Delete 1 company?"
-        : `Delete ${selectedCount} companies?`;
-    if (!confirm(`${label} This cannot be undone.`)) return;
+    const ok = await confirm({
+      title: selectedCount === 1 ? "Delete company" : "Delete companies",
+      description:
+        selectedCount === 1
+          ? "Delete 1 selected company? This cannot be undone."
+          : `Delete ${selectedCount} selected companies? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
     const ids = Array.from(selectedIds);
     await onBulkDelete(ids);
     setSelectedIds(new Set());
@@ -128,7 +136,11 @@ export function CompanyTable({
               disabled={bulkDeleting}
               className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              {bulkDeleting ? (
+                <Spinner className="h-3.5 w-3.5" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5" />
+              )}
               {bulkDeleting ? "Deleting…" : "Delete selected"}
             </button>
           </div>

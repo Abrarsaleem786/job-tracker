@@ -1,13 +1,15 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Briefcase } from "lucide-react";
+import { Spinner } from "@/components/Spinner";
+import { useToast } from "@/components/ToastProvider";
 
 export default function SignupPage() {
   const router = useRouter();
+  const toast = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,10 +23,12 @@ export default function SignupPage() {
 
     if (password !== confirm) {
       setError("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
     if (password.length < 6) {
       setError("Password must be at least 6 characters");
+      toast.error("Password must be at least 6 characters");
       return;
     }
 
@@ -41,25 +45,20 @@ export default function SignupPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error || "Could not create account");
+        const message = data.error || "Could not create account";
+        setError(message);
+        toast.error(message);
+        setLoading(false);
         return;
       }
 
-      // Auto sign-in after successful registration
-      const signInRes = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-      if (signInRes?.error) {
-        router.push("/login");
-        return;
-      }
-      router.push("/");
-      router.refresh();
+      toast.success(
+        data.message || "Account created. Please sign in to continue."
+      );
+      router.replace("/login");
     } catch {
       setError("Something went wrong");
-    } finally {
+      toast.error("Something went wrong");
       setLoading(false);
     }
   }
@@ -90,8 +89,9 @@ export default function SignupPage() {
               type="text"
               autoComplete="name"
               value={name}
+              disabled={loading}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2 disabled:bg-slate-50"
             />
           </div>
           <div>
@@ -107,8 +107,9 @@ export default function SignupPage() {
               required
               autoComplete="email"
               value={email}
+              disabled={loading}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2 disabled:bg-slate-50"
             />
           </div>
           <div>
@@ -125,8 +126,9 @@ export default function SignupPage() {
               minLength={6}
               autoComplete="new-password"
               value={password}
+              disabled={loading}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2 disabled:bg-slate-50"
             />
           </div>
           <div>
@@ -143,8 +145,9 @@ export default function SignupPage() {
               minLength={6}
               autoComplete="new-password"
               value={confirm}
+              disabled={loading}
               onChange={(e) => setConfirm(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2 disabled:bg-slate-50"
             />
           </div>
 
@@ -157,8 +160,9 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
           >
+            {loading && <Spinner />}
             {loading ? "Creating account…" : "Create account"}
           </button>
         </form>

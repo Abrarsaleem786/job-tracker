@@ -8,6 +8,8 @@ import { DashboardStats } from "./DashboardStats";
 import { CompanyTable } from "./CompanyTable";
 import { FilterBar, type Filters } from "./FilterBar";
 import { AddCompanyModal } from "./AddCompanyModal";
+import { Spinner } from "./Spinner";
+import { useToast } from "./ToastProvider";
 
 type SortKey = "name" | "category" | "location" | "status" | "dateApplied";
 
@@ -78,9 +80,9 @@ export function DashboardClient({
   });
   const [sort, setSort] = useState<SortKey>("name");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const toast = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [importMessage, setImportMessage] = useState<string | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const categories = useMemo(
@@ -163,18 +165,25 @@ export function DashboardClient({
       body: JSON.stringify({ status }),
     });
     if (!res.ok) {
+      toast.error("Could not update status");
       await refresh();
     }
   }
 
   async function handleDelete(id: string) {
+    const name = companies.find((c) => c.id === id)?.name;
     setCompanies((prev) => {
       const next = prev.filter((c) => c.id !== id);
       setStats(computeStats(next));
       return next;
     });
     const res = await fetch(`/api/companies/${id}`, { method: "DELETE" });
-    if (!res.ok) await refresh();
+    if (!res.ok) {
+      toast.error("Could not delete company");
+      await refresh();
+      return;
+    }
+    toast.success(name ? `Deleted ${name}` : "Company deleted");
   }
 
   async function handleBulkDelete(ids: string[]) {
@@ -192,8 +201,18 @@ export function DashboardClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids }),
       });
-      if (!res.ok) await refresh();
+      if (!res.ok) {
+        toast.error("Could not delete selected companies");
+        await refresh();
+        return;
+      }
+      toast.success(
+        ids.length === 1
+          ? "Deleted 1 company"
+          : `Deleted ${ids.length} companies`
+      );
     } catch {
+      toast.error("Could not delete selected companies");
       await refresh();
     } finally {
       setBulkDeleting(false);
@@ -202,20 +221,21 @@ export function DashboardClient({
 
   async function handleImportStarter() {
     setImporting(true);
-    setImportMessage(null);
     try {
       const res = await fetch("/api/companies/import-starter", {
         method: "POST",
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setImportMessage(data.error || "Import failed");
+        toast.error(data.error || "Import failed");
         return;
       }
-      setImportMessage(data.message || `Imported ${data.imported} companies`);
+      toast.success(
+        data.message || `Imported ${data.imported} companies`
+      );
       await refresh();
     } catch {
-      setImportMessage("Import failed");
+      toast.error("Import failed");
     } finally {
       setImporting(false);
     }
@@ -271,7 +291,7 @@ export function DashboardClient({
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
               Add companies one by one, or import a starter list of 50 IT
-              companies in Islamabad &amp; Rawalpindi. Only you can see your
+              companies. Only you can see your
               data.
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -289,13 +309,14 @@ export function DashboardClient({
                 disabled={importing}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
               >
-                <Download className="h-4 w-4" />
+                {importing ? (
+                  <Spinner className="h-4 w-4" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
                 {importing ? "Importing…" : "Import starter list (50)"}
               </button>
             </div>
-            {importMessage && (
-              <p className="mt-4 text-sm text-slate-600">{importMessage}</p>
-            )}
           </div>
         ) : (
           <>
@@ -313,13 +334,14 @@ export function DashboardClient({
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
                 title="Add any missing companies from the starter catalog"
               >
-                <Download className="h-3.5 w-3.5" />
+                {importing ? (
+                  <Spinner className="h-3.5 w-3.5" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
                 {importing ? "Importing…" : "Import missing starters"}
               </button>
             </div>
-            {importMessage && (
-              <p className="text-sm text-slate-600">{importMessage}</p>
-            )}
             <CompanyTable
               companies={filtered}
               sort={sort}

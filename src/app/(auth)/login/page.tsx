@@ -3,11 +3,12 @@
 import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Briefcase } from "lucide-react";
+import { Spinner } from "@/components/Spinner";
+import { useToast } from "@/components/ToastProvider";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const toast = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,13 +26,14 @@ export default function LoginPage() {
       });
       if (res?.error) {
         setError("Invalid email or password");
+        toast.error("Invalid email or password");
+        setLoading(false);
         return;
       }
-      router.push("/");
-      router.refresh();
+      window.location.assign("/");
     } catch {
       setError("Something went wrong");
-    } finally {
+      toast.error("Something went wrong");
       setLoading(false);
     }
   }
@@ -63,8 +65,9 @@ export default function LoginPage() {
               required
               autoComplete="email"
               value={email}
+              disabled={loading}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2 disabled:bg-slate-50"
             />
           </div>
           <div>
@@ -80,8 +83,9 @@ export default function LoginPage() {
               required
               autoComplete="current-password"
               value={password}
+              disabled={loading}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2 disabled:bg-slate-50"
             />
           </div>
 
@@ -94,8 +98,9 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
           >
+            {loading && <Spinner />}
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>

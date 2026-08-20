@@ -7,6 +7,9 @@ import { ArrowLeft, ExternalLink, Trash2 } from "lucide-react";
 import type { Company } from "@/types";
 import { STATUSES, STATUS_LABELS, type Status } from "@/types";
 import { StatusBadge } from "./StatusBadge";
+import { Spinner } from "./Spinner";
+import { useConfirm } from "./ConfirmDialog";
+import { useToast } from "./ToastProvider";
 
 type Props = { company: Company };
 
@@ -19,6 +22,8 @@ function toDateInput(value: string | Date | null | undefined) {
 
 export function CompanyDetailForm({ company }: Props) {
   const router = useRouter();
+  const confirm = useConfirm();
+  const toast = useToast();
   const [form, setForm] = useState({
     name: company.name,
     category: company.category,
@@ -33,7 +38,7 @@ export function CompanyDetailForm({ company }: Props) {
     notes: company.notes || "",
   });
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -44,7 +49,6 @@ export function CompanyDetailForm({ company }: Props) {
     e.preventDefault();
     setSaving(true);
     setError(null);
-    setMessage(null);
     try {
       const res = await fetch(`/api/companies/${company.id}`, {
         method: "PATCH",
@@ -64,27 +68,49 @@ export function CompanyDetailForm({ company }: Props) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed to save");
       }
-      setMessage("Saved successfully");
+      toast.success("Changes saved");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete() {
-    if (!confirm(`Delete ${company.name}? This cannot be undone.`)) return;
-    const res = await fetch(`/api/companies/${company.id}`, {
-      method: "DELETE",
+    const ok = await confirm({
+      title: "Delete company",
+      description: `Delete ${company.name}? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
     });
-    if (res.ok) {
+    if (!ok) return;
+
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/companies/${company.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to delete company");
+      }
+      toast.success(`Deleted ${company.name}`);
       router.push("/");
       router.refresh();
-    } else {
-      setError("Failed to delete company");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete company";
+      setError(message);
+      toast.error(message);
+      setDeleting(false);
     }
   }
+
+  const busy = saving || deleting;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -138,6 +164,7 @@ export function CompanyDetailForm({ company }: Props) {
               <input
                 required
                 value={form.name}
+                disabled={busy}
                 onChange={(e) => set("name", e.target.value)}
                 className={inputClass}
               />
@@ -145,6 +172,7 @@ export function CompanyDetailForm({ company }: Props) {
             <Field label="Position">
               <input
                 value={form.position}
+                disabled={busy}
                 onChange={(e) => set("position", e.target.value)}
                 className={inputClass}
               />
@@ -153,6 +181,7 @@ export function CompanyDetailForm({ company }: Props) {
               <input
                 required
                 value={form.category}
+                disabled={busy}
                 onChange={(e) => set("category", e.target.value)}
                 className={inputClass}
               />
@@ -161,6 +190,7 @@ export function CompanyDetailForm({ company }: Props) {
               <input
                 required
                 value={form.location}
+                disabled={busy}
                 onChange={(e) => set("location", e.target.value)}
                 className={inputClass}
               />
@@ -168,6 +198,7 @@ export function CompanyDetailForm({ company }: Props) {
             <Field label="Status">
               <select
                 value={form.status}
+                disabled={busy}
                 onChange={(e) => set("status", e.target.value)}
                 className={inputClass}
               >
@@ -182,6 +213,7 @@ export function CompanyDetailForm({ company }: Props) {
               <input
                 type="date"
                 value={form.dateApplied}
+                disabled={busy}
                 onChange={(e) => set("dateApplied", e.target.value)}
                 className={inputClass}
               />
@@ -190,6 +222,7 @@ export function CompanyDetailForm({ company }: Props) {
               <input
                 type="date"
                 value={form.followUpDate}
+                disabled={busy}
                 onChange={(e) => set("followUpDate", e.target.value)}
                 className={inputClass}
               />
@@ -198,6 +231,7 @@ export function CompanyDetailForm({ company }: Props) {
               <input
                 type="url"
                 value={form.websiteUrl}
+                disabled={busy}
                 onChange={(e) => set("websiteUrl", e.target.value)}
                 className={inputClass}
                 placeholder="https://"
@@ -207,6 +241,7 @@ export function CompanyDetailForm({ company }: Props) {
               <input
                 type="url"
                 value={form.careersUrl}
+                disabled={busy}
                 onChange={(e) => set("careersUrl", e.target.value)}
                 className={inputClass}
                 placeholder="https://"
@@ -217,6 +252,7 @@ export function CompanyDetailForm({ company }: Props) {
           <Field label="Description">
             <textarea
               value={form.description}
+              disabled={busy}
               onChange={(e) => set("description", e.target.value)}
               rows={4}
               className={inputClass}
@@ -225,17 +261,13 @@ export function CompanyDetailForm({ company }: Props) {
           <Field label="Notes">
             <textarea
               value={form.notes}
+              disabled={busy}
               onChange={(e) => set("notes", e.target.value)}
               rows={3}
               className={inputClass}
             />
           </Field>
 
-          {message && (
-            <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-              {message}
-            </p>
-          )}
           {error && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
               {error}
@@ -246,16 +278,22 @@ export function CompanyDetailForm({ company }: Props) {
             <button
               type="button"
               onClick={handleDelete}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
             >
-              <Trash2 className="h-4 w-4" />
-              Delete
+              {deleting ? (
+                <Spinner className="h-4 w-4" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              {deleting ? "Deleting…" : "Delete"}
             </button>
             <button
               type="submit"
-              disabled={saving}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
             >
+              {saving && <Spinner />}
               {saving ? "Saving…" : "Save changes"}
             </button>
           </div>
@@ -266,7 +304,7 @@ export function CompanyDetailForm({ company }: Props) {
 }
 
 const inputClass =
-  "w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-blue-500 focus:ring-2";
+  "w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-blue-500 focus:ring-2 disabled:bg-slate-50";
 
 function Field({
   label,
