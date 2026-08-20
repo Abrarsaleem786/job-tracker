@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Plus, LogOut, Download } from "lucide-react";
+import { Briefcase, Plus, LogOut, Download } from "lucide-react";
 import { signOut } from "next-auth/react";
 import type { Company, DashboardStats as Stats } from "@/types";
 import { DashboardStats } from "./DashboardStats";
@@ -244,35 +244,40 @@ export function DashboardClient({
   const displayName = userName || userEmail;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              Job Application Tracker
-            </h1>
-            <p className="text-sm text-slate-500">
-              Your private application pipeline
-            </p>
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 p-2 text-white shadow-sm shadow-blue-600/30">
+              <Briefcase className="h-4 w-4" aria-hidden />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
+                Job Application Tracker
+              </h1>
+              <p className="text-xs text-slate-500 sm:text-sm">
+                Your private application pipeline
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {displayName && (
-              <span className="hidden max-w-[180px] truncate text-sm text-slate-500 sm:inline">
+              <span className="hidden max-w-[180px] truncate rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 sm:inline">
                 {displayName}
               </span>
             )}
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm shadow-blue-600/25 hover:bg-blue-700"
             >
               <Plus className="h-4 w-4" />
-              Add company
+              <span className="hidden sm:inline">Add company</span>
             </button>
             <button
               type="button"
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Sign out</span>
@@ -281,24 +286,23 @@ export function DashboardClient({
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6">
         <DashboardStats stats={stats} />
 
         {companies.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white/90 p-10 text-center shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">
               Your tracker is empty
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
               Add companies one by one, or import a starter list of 50 IT
-              companies. Only you can see your
-              data.
+              companies. Only you can see your data.
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
               >
                 <Plus className="h-4 w-4" />
                 Add company
@@ -307,7 +311,7 @@ export function DashboardClient({
                 type="button"
                 onClick={handleImportStarter}
                 disabled={importing}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
               >
                 {importing ? (
                   <Spinner className="h-4 w-4" />
@@ -320,28 +324,28 @@ export function DashboardClient({
           </div>
         ) : (
           <>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <FilterBar
-                filters={filters}
-                categories={categories}
-                locations={locations}
-                onChange={setFilters}
-              />
-              <button
-                type="button"
-                onClick={handleImportStarter}
-                disabled={importing}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
-                title="Add any missing companies from the starter catalog"
-              >
-                {importing ? (
-                  <Spinner className="h-3.5 w-3.5" />
-                ) : (
-                  <Download className="h-3.5 w-3.5" />
-                )}
-                {importing ? "Importing…" : "Import missing starters"}
-              </button>
-            </div>
+            <FilterBar
+              filters={filters}
+              categories={categories}
+              locations={locations}
+              onChange={setFilters}
+              actions={
+                <button
+                  type="button"
+                  onClick={handleImportStarter}
+                  disabled={importing}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
+                  title="Add any missing companies from the starter catalog"
+                >
+                  {importing ? (
+                    <Spinner className="h-3.5 w-3.5" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5" />
+                  )}
+                  {importing ? "Importing…" : "Import missing starters"}
+                </button>
+              }
+            />
             <CompanyTable
               companies={filtered}
               sort={sort}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, LayoutGrid, Trash2 } from "lucide-react";
 import type { Company } from "@/types";
 import { CompanyRow } from "./CompanyRow";
 import { useConfirm } from "./ConfirmDialog";
@@ -34,6 +34,14 @@ function SortIcon({
     <ArrowDown className="h-3.5 w-3.5 text-blue-600" />
   );
 }
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "name", label: "Company" },
+  { key: "category", label: "Category" },
+  { key: "location", label: "Location" },
+  { key: "status", label: "Status" },
+  { key: "dateApplied", label: "Applied" },
+];
 
 export function CompanyTable({
   companies,
@@ -107,26 +115,70 @@ export function CompanyTable({
     setSelectedIds(new Set());
   }
 
-  const headers: { key: SortKey; label: string; className?: string }[] = [
-    { key: "name", label: "Company" },
-    { key: "category", label: "Category", className: "hidden lg:table-cell" },
-    { key: "location", label: "Location", className: "hidden md:table-cell" },
-    { key: "status", label: "Status" },
-    { key: "dateApplied", label: "Applied", className: "hidden sm:table-cell" },
-  ];
-
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-end justify-between gap-2 px-0.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-lg bg-blue-50 p-1.5 text-blue-600">
+              <LayoutGrid className="h-4 w-4" />
+            </span>
+            <h2 className="text-base font-semibold text-slate-900">
+              Companies
+            </h2>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            {companies.length} shown
+            {selectedCount > 0 ? ` · ${selectedCount} selected` : ""}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-3 shadow-sm">
+        <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+          <input
+            ref={selectAllRef}
+            type="checkbox"
+            checked={allVisibleSelected}
+            onChange={toggleAllVisible}
+            disabled={companies.length === 0}
+            aria-label="Select all companies"
+            className="h-4 w-4 rounded border-slate-300 text-blue-600 accent-blue-600"
+          />
+          Select all
+        </label>
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Sort
+          </span>
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => onSort(opt.key)}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                sort === opt.key
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {opt.label}
+              <SortIcon active={sort === opt.key} order={order} />
+            </button>
+          ))}
+        </div>
+      </div>
+
       {selectedCount > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-100 bg-blue-50 px-4 py-2.5">
-          <p className="text-sm font-medium text-slate-800">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 px-4 py-2.5 shadow-sm">
+          <p className="text-sm font-semibold text-slate-800">
             {selectedCount} selected
           </p>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setSelectedIds(new Set())}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
             >
               Clear
             </button>
@@ -134,7 +186,7 @@ export function CompanyTable({
               type="button"
               onClick={handleBulkDelete}
               disabled={bulkDeleting}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-60"
             >
               {bulkDeleting ? (
                 <Spinner className="h-3.5 w-3.5" />
@@ -146,65 +198,25 @@ export function CompanyTable({
           </div>
         </div>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="w-10 px-3 py-3">
-                <input
-                  ref={selectAllRef}
-                  type="checkbox"
-                  checked={allVisibleSelected}
-                  onChange={toggleAllVisible}
-                  disabled={companies.length === 0}
-                  aria-label="Select all companies"
-                  className="h-4 w-4 rounded border-slate-300 text-blue-600 accent-blue-600"
-                />
-              </th>
-              {headers.map((h) => (
-                <th key={h.key} className={`px-4 py-3 ${h.className ?? ""}`}>
-                  <button
-                    type="button"
-                    onClick={() => onSort(h.key)}
-                    className="inline-flex items-center gap-1 hover:text-slate-800"
-                  >
-                    {h.label}
-                    <SortIcon active={sort === h.key} order={order} />
-                  </button>
-                </th>
-              ))}
-              <th className="px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {companies.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="px-4 py-12 text-center text-sm text-slate-500"
-                >
-                  No companies match your filters.
-                </td>
-              </tr>
-            ) : (
-              companies.map((c) => (
-                <CompanyRow
-                  key={c.id}
-                  company={c}
-                  selected={selectedIds.has(c.id)}
-                  onToggleSelect={toggleOne}
-                  onStatusChange={onStatusChange}
-                  onDelete={onDelete}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      <div className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
-        {companies.length} compan{companies.length === 1 ? "y" : "ies"}
-        {selectedCount > 0 ? ` · ${selectedCount} selected` : ""}
-      </div>
-    </div>
+
+      {companies.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-4 py-16 text-center text-sm text-slate-500">
+          No companies match your filters.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {companies.map((c) => (
+            <CompanyRow
+              key={c.id}
+              company={c}
+              selected={selectedIds.has(c.id)}
+              onToggleSelect={toggleOne}
+              onStatusChange={onStatusChange}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
